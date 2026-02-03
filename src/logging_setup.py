@@ -1,21 +1,26 @@
 import logging
 import os
 
-def setup_logging(log_file="timer_cli.log"):
+def setup_logging(log_filename="timer_cli.log"):
     """
-    Configures the logging system to write to a file.
-    Logs are appended to the file.
+    Configures the logging system to write to a centralized file in the user's home directory.
     """
+    # Create a hidden directory in the user's home folder for global logs
+    home_dir = os.path.expanduser("~")
+    log_dir = os.path.join(home_dir, ".timer_cli")
+    
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        
+    log_path = os.path.join(log_dir, log_filename)
+
     logging.basicConfig(
-        filename=log_file,
+        filename=log_path,
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    # Also log to console if needed for debugging, but typically for TUI apps
-    # we avoid stdout/stderr as it messes up the display.
-    # So we strictly log to file.
-    logging.info("Logging system initialized.")
+    logging.info(f"Logging system initialized at {log_path}")
 
 def log_action(category, action, details=""):
     """

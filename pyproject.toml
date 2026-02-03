@@ -1,0 +1,20 @@
+[project]
+name = "timer-cli"
+version = "0.0.2"
+description = "A production-grade Timer & Stopwatch CLI application."
+authors = [
+    {name = "krishnakanthb13", email = "krishnakanthb13@users.noreply.github.com"},
+]
+dependencies = [
+    "windows-curses; sys_platform == 'win32'",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+timer-cli = "src.main:main"

@@ -53,3 +53,7 @@ ENV/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Notes
+RELEASE_NOTES.md
+SOCIAL_MEDIA.md
