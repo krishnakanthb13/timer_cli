@@ -16,7 +16,7 @@ class TimeManager:
         
         new_timer = Timer(duration, name[:15]) # Cap name
         self.timers.append(new_timer)
-        log_action("Timer", "Started", f"Name: {new_timer.name}, Duration: {duration}s")
+        log_action("Timer", "Started", f"ID: {new_timer.id}, Name: {new_timer.name}, Duration: {duration}s")
         return new_timer
 
     def add_stopwatch(self, name: str = ""):
@@ -26,7 +26,7 @@ class TimeManager:
             
         new_sw = Stopwatch(name[:15]) # Cap name
         self.stopwatches.append(new_sw)
-        log_action("Stopwatch", "Started", f"Name: {new_sw.name}")
+        log_action("Stopwatch", "Started", f"ID: {new_sw.id}, Name: {new_sw.name}")
         return new_sw
 
     def remove_timer(self, timer: Timer):

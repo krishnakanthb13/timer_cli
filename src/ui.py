@@ -116,7 +116,7 @@ def render_app(stdscr, manager, menu, width, height, focused_index=-1):
         current_x += len(label) + 2
 
     # 4. Instructions/Status
-    footer = " [^/v] Nav List  [</>] Nav Menu  [enter/return] Pause/Res  [s] Split  [r] Reset  [x] Close "
+    footer = " [^/v] Nav List  [</>] Nav Menu  [enter/return] Pause/Res  [s] Split  [r] Reset  [d] Delete "
     stdscr.attron(curses.color_pair(5) | curses.A_BOLD)
     try:
         stdscr.addstr(height-1, 0, footer.center(width)[:width-1])

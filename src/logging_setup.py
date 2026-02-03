@@ -1,18 +1,21 @@
 import logging
 import os
 
-def setup_logging(log_filename="timer_cli.log"):
-    """
-    Configures the logging system to write to a centralized file in the user's home directory.
-    """
-    # Create a hidden directory in the user's home folder for global logs
+def get_log_path(log_filename="timer_cli.log"):
+    """Returns the absolute path to the log file in the user's home directory."""
     home_dir = os.path.expanduser("~")
     log_dir = os.path.join(home_dir, ".timer_cli")
     
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         
-    log_path = os.path.join(log_dir, log_filename)
+    return os.path.join(log_dir, log_filename)
+
+def setup_logging(log_filename="timer_cli.log"):
+    """
+    Configures the logging system to write to a centralized file in the user's home directory.
+    """
+    log_path = get_log_path(log_filename)
 
     logging.basicConfig(
         filename=log_path,
