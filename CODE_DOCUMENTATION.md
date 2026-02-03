@@ -58,4 +58,5 @@ graph TD
 2.  `main.py` initializes `curses`, sets up color pairs, and starts the `App`.
 3.  The `App` enters a non-blocking while-loop (~20 FPS).
 4.  User inputs (like `New Timer`) pause the main loop to show a modal input overlay using `get_user_input`.
-5.  State persists in a centralized log file located in the user's home directory (e.g., `~/.timer_cli/timer_cli.log` on Unix or `%USERPROFILE%\.timer_cli\timer_cli.log` on Windows). The History Viewer dynamically parses this file to reconstruct item lifecycles.
+5.  State persists in a centralized log file located in the user's home directory (e.g., `~/.timer_cli/timer_cli.log` on Unix or `%USERPROFILE%\.timer_cli\timer_cli.log` on Windows).
+6.  The **History Viewer** dynamically parses this file using optimized caching to ensure a responsive experience. It reconstructs item lifecycles by grouping events by ID, with sessions sorted from newest to oldest. Within each session, events are displayed chronologically to provide a clear audit trail of actions.

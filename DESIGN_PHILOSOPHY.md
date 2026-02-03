@@ -14,6 +14,7 @@ Timer CLI provides a **"Headless-First"** yet visually rich experience. It lever
 -   **Modal Transparency**: Input prompts (like naming a timer) are modal but keep the background UI visible, ensuring the user doesn't lose context.
 -   **No Hidden State**: All actions (pausing, laps, completion) are documented in a human-readable log file. The History Viewer uses this low-level data to reconstruct a high-level "Lifecycle view" of every timer. This ensures users can audit exactly when and how their time was spent.
 -   **Visual Hierarchy**: High-contrast blue headers/footers and progress bars guide the user's eye to high-priority information (remaining time).
+-   **Hierarchical Persistence**: By structuring flat logs into sessions and events, the application turns cold data into actionable insights without requiring a complex database.
 
 ## Target Audience
 -   Software Engineers and Sysadmins.

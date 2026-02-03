@@ -46,6 +46,7 @@ timer-cli
 | **`[r]`** | **Reset** the selected timer or stopwatch |
 | **`[d]`** | **Delete/Remove** the selected item from the list |
 | **`[h]`** | Open the **History** menu (supports **TAB** to toggle Grouped/Raw views) |
+| **`PgUp/PgDn`** | Scroll through history pages quickly |
 | **`[q]`** | Quit the application |
 
 ### Timer Input Formats

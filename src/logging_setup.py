@@ -5,9 +5,7 @@ def get_log_path(log_filename="timer_cli.log"):
     """Returns the absolute path to the log file in the user's home directory."""
     home_dir = os.path.expanduser("~")
     log_dir = os.path.join(home_dir, ".timer_cli")
-    
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
         
     return os.path.join(log_dir, log_filename)
 

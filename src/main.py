@@ -1,10 +1,81 @@
 import curses
 import time
 import sys
+import re
+from datetime import datetime
 from .managers import TimeManager
 from .ui import render_app
 from .logging_setup import setup_logging, log_action, get_log_path
 from .models import State, Timer, Stopwatch
+
+def build_grouped_view(log_lines, width):
+    groups = {} # id -> {info, events}
+    system_events = []
+    pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[([A-Z]+)\] \[([^\]]+)\] ([^-]+)- (.*)')
+    
+    for line in log_lines:
+        match = pattern.search(line)
+        if not match: continue
+        ts, level, cat, action, details = match.groups()
+        action, details = action.strip(), details.strip()
+        
+        if cat == "System":
+            system_events.append(f"  {ts} > {action} {details}")
+            continue
+            
+        id_match = re.search(r'ID: ([a-f0-9]+)', details)
+        name_match = re.search(r'Name: ([^,]+)', details)
+        obj_id = id_match.group(1) if id_match else "Unknown"
+        obj_name = name_match.group(1).strip() if name_match else None
+        
+        effective_id = obj_id
+        if obj_id == "Unknown" and action == "Started" and obj_name:
+            effective_id = f"legacy_{obj_name}"
+
+        if effective_id not in groups:
+            groups[effective_id] = {
+                "id": obj_id, "type": cat, "name": "Unknown", 
+                "events": [], "last_ts": ts, "start_ts": ts, "lap_count": 0
+            }
+        
+        if action == "Started": groups[effective_id]["start_ts"] = ts
+        if obj_name: groups[effective_id]["name"] = obj_name
+        
+        clean_details = re.sub(r'ID: [a-f0-9]+', '', details).strip().strip(',').strip()
+        
+        # Calculate +Time from start
+        try:
+            fmt = "%Y-%m-%d %H:%M:%S"
+            delta = datetime.strptime(ts, fmt) - datetime.strptime(groups[effective_id]["start_ts"], fmt)
+            h, rem = divmod(int(delta.total_seconds()), 3600)
+            m, s = divmod(rem, 60)
+            delta_str = f"+{h:02}:{m:02}:{s:02}"
+        except (ValueError, TypeError, KeyError):
+            delta_str = "+00:00:00"
+
+        if action == "Lap":
+            groups[effective_id]["lap_count"] += 1
+            display_action = f"Lap {groups[effective_id]['lap_count']}"
+            if clean_details: display_action += f": {clean_details}"
+        else:
+            display_action = f"{action} {clean_details}".strip()
+        
+        groups[effective_id]["events"].append(f"  {ts} ({delta_str}) > {display_action}")
+        groups[effective_id]["last_ts"] = ts
+
+    display = [""]
+    sorted_groups = sorted(groups.values(), key=lambda x: x["last_ts"], reverse=True)
+    for g in sorted_groups:
+        id_display = f" (ID: {g['id']})" if g['id'] != "Unknown" else ""
+        display.append(f"[{g['type']}] {g['name']}{id_display}")
+        display.extend(g["events"])
+        display.append("-" * (width - 2))
+    
+    if system_events:
+        display.append(""); display.append("[SYSTEM EVENTS]")
+        display.extend(reversed(system_events))
+        display.append("-" * (width - 2))
+    return display
 
 class Menu:
     def __init__(self, items):
@@ -194,102 +265,39 @@ class App:
                 lines = f.readlines()
         except FileNotFoundError:
             lines = ["No logs found."]
-            
-        view_mode = "Grouped" # Toggle with TAB
+
+        # Pre-calculated content helpers
+        # Initial calculation
+        view_mode = "Grouped" 
         offset = 0
+        h, w = stdscr.getmaxyx()
+        last_w = w
+        
+        views = {
+            "Raw": [""] + [l.strip() for l in reversed(lines)],
+            "Grouped": build_grouped_view(lines, w)
+        }
         
         while True:
             stdscr.erase()
             h, w = stdscr.getmaxyx()
             
+            # Rebuild if resized
+            if w != last_w:
+                views["Grouped"] = build_grouped_view(lines, w)
+                last_w = w
+                
+            display_lines = views[view_mode]
+            
             # Header
-            title = f" HISTORY ({view_mode}) - TAB to toggle, 'q' to back "
+            title = f" HISTORY ({view_mode}) - [TAB] Toggle | [q] Back "
             stdscr.attron(curses.color_pair(1))
             stdscr.addstr(0, 0, title.center(w))
             stdscr.attroff(curses.color_pair(1))
             
-            display_lines = []
-            display_lines.append("") # Vertical space for consistency
-            if view_mode == "Raw":
-                display_lines = [l.strip() for l in lines]
-            else:
-                # Grouping logic
-                groups = {} # id -> {info, events}
-                system_events = []
-                
-                import re
-                # Pattern: 2026-02-03 17:34:22 [INFO] [Category] Action - Details
-                pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[INFO\] \[([^\]]+)\] ([^-]+)- (.*)')
-                
-                for line in lines:
-                    match = pattern.search(line)
-                    if not match: continue
-                    ts, cat, action, details = match.groups()
-                    action = action.strip()
-                    details = details.strip()
-                    
-                    if cat == "System":
-                        system_events.append(f"  {ts} > {action} {details}")
-                        continue
-                        
-                    # Find ID and Name in details
-                    id_match = re.search(r'ID: ([a-f0-9]+)', details)
-                    name_match = re.search(r'Name: ([^,]+)', details)
-                    
-                    obj_id = id_match.group(1) if id_match else "Unknown"
-                    obj_name = name_match.group(1).strip() if name_match else None
-                    
-                    # If this is a 'Started' event without an ID (legacy), 
-                    # we use a pseudo-id based on name to keep it separate from other "Unknowns"
-                    effective_id = obj_id
-                    if obj_id == "Unknown" and action == "Started" and obj_name:
-                        effective_id = f"legacy_{obj_name}"
-
-                    if effective_id not in groups:
-                        groups[effective_id] = {
-                            "id": obj_id, 
-                            "type": cat, 
-                            "name": "Unknown", 
-                            "events": [], 
-                            "last_ts": ts
-                        }
-                    
-                    if obj_name:
-                        groups[effective_id]["name"] = obj_name
-                    
-                    # Clean details for display (remove ID: xxx since it's in header)
-                    clean_details = re.sub(r'ID: [a-f0-9]+', '', details).strip()
-                    clean_details = clean_details.strip(',').strip()
-                    
-                    display_action = f"{action} {clean_details}".strip()
-                    groups[effective_id]["events"].append(f"  {ts} > {display_action}")
-                    groups[effective_id]["last_ts"] = ts
-
-                # Sort groups by latest timestamp
-                sorted_groups = sorted(groups.values(), key=lambda x: x["last_ts"], reverse=True)
-                
-                for g in sorted_groups:
-                    name_display = g['name']
-                    id_display = f" (ID: {g['id']})" if g['id'] != "Unknown" else ""
-                    header = f"[{g['type']}] {name_display}{id_display}"
-                    
-                    display_lines.append(header)
-                    for e in reversed(g["events"]):
-                        display_lines.append(e)
-                    display_lines.append("-" * (w-2))
-                
-                if system_events:
-                    display_lines.append("[SYSTEM EVENTS]")
-                    display_lines.extend(reversed(system_events))
-                    display_lines.append("-" * (w-2))
-
-            # Render display_lines with scrolling
+            # Rendering
             max_lines = h - 2
-            start_idx = offset
-            end_idx = min(len(display_lines), offset + max_lines)
-            
-            view_content = display_lines[start_idx:end_idx]
-            
+            view_content = display_lines[offset : offset + max_lines]
             for i, line in enumerate(view_content):
                 if line.startswith("["): # Category headers
                     stdscr.attron(curses.A_BOLD | curses.color_pair(2))
@@ -297,29 +305,26 @@ class App:
                     stdscr.attroff(curses.A_BOLD | curses.color_pair(2))
                 else:
                     stdscr.addstr(i+1, 1, line[:w-2])
-                
             stdscr.refresh()
             
-            # Wait for key
+            # Input
             stdscr.nodelay(False)
             k = stdscr.getch()
             stdscr.nodelay(True)
             
-            if k == ord('q') or k == 27:
-                break
-            elif k == ord('\t'): # TAB
+            if k == ord('q') or k == 27: break
+            elif k == ord('\t'):
                 view_mode = "Raw" if view_mode == "Grouped" else "Grouped"
                 offset = 0
             elif k == curses.KEY_UP:
                 offset = max(0, offset - 1)
             elif k == curses.KEY_DOWN:
-                offset = min(len(display_lines) - max_lines, offset + 1) if len(display_lines) > max_lines else 0
+                offset = min(len(display_lines) - max_lines, offset + 1) if len(display_lines) > max_lines else offset
+            elif k == curses.KEY_PPAGE: # Page Up
+                offset = max(0, offset - max_lines)
+            elif k == curses.KEY_NPAGE: # Page Down
+                offset = min(len(display_lines) - max_lines, offset + max_lines) if len(display_lines) > max_lines else offset
 
-    def handle_new_stopwatch(self, stdscr):
-        name = self.get_user_input(stdscr, "Name (optional, max 15 char): ")
-        if name is None: return # Cancelled
-        
-        self.manager.add_stopwatch(name)
 
 def main():
     setup_logging()
