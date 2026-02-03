@@ -44,7 +44,8 @@ timer-cli
 | **`Enter`** | **Focus on Item**: Toggle Pause/Resume \| **Focus on Menu**: Execute Action |
 | **`[s]`** | Record a **Split/Lap** for the selected stopwatch |
 | **`[r]`** | **Reset** the selected timer or stopwatch |
-| **`[x]`** | **Close/Remove** the selected item from the list |
+| **`[d]`** | **Delete/Remove** the selected item from the list |
+| **`[h]`** | Open the **History** menu (supports **TAB** to toggle Grouped/Raw views) |
 | **`[q]`** | Quit the application |
 
 ### Timer Input Formats

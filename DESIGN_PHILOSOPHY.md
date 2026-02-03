@@ -12,7 +12,7 @@ Timer CLI provides a **"Headless-First"** yet visually rich experience. It lever
 ## Design Principles
 -   **Precision over Polarity**: Time tracking is calculated based on system timestamps (`time.time()`), not loop ticks. This ensures that even if the TUI lags or the window is resized, the time remains accurate.
 -   **Modal Transparency**: Input prompts (like naming a timer) are modal but keep the background UI visible, ensuring the user doesn't lose context.
--   **No Hidden State**: All actions (pausing, laps, completion) are documented in a human-readable log file.
+-   **No Hidden State**: All actions (pausing, laps, completion) are documented in a human-readable log file. The History Viewer uses this low-level data to reconstruct a high-level "Lifecycle view" of every timer. This ensures users can audit exactly when and how their time was spent.
 -   **Visual Hierarchy**: High-contrast blue headers/footers and progress bars guide the user's eye to high-priority information (remaining time).
 
 ## Target Audience

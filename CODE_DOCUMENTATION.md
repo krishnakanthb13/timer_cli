@@ -13,7 +13,7 @@ timer_cli/
 │   ├── ui.py             # Curses-based rendering engine
 │   ├── sound.py          # Cross-platform sound notification logic
 │   ├── utils.py          # Shared helper functions (format_time)
-│   └── logging_setup.py  # Structured logging configuration
+│   └── logging_setup.py  # Structured logging with global path resolver
 ├── LICENSE               # GPL v3 License
 ├── pyproject.toml        # Build system and dependencies
 ├── run_timer.bat         # Windows Launcher
@@ -33,7 +33,7 @@ The application follows a standard TUI loop pattern:
 | **`models.py`** | Defines `Timer` (countdown) and `Stopwatch` (countup) classes. Handles time calculation using the system clock (`time.time()`) rather than sleep-based ticking. |
 | **`managers.py`** | The `TimeManager` class tracks all active timers and stopwatches. It provides methods to add, remove, and update all items globally. |
 | **`ui.py`** | Contains `render_app` and `draw_progress_bar`. Responsible for efficient `curses` window updates and Selection Mode highlighting. |
-| **`main.py`** | Coordinates the `App` lifecycle. Manages the shared `Menu`, handles user input (including modal input prompts), and drives the main loop. |
+| **`main.py`** | Coordinates the `App` lifecycle. Manages the shared `Menu`, handles user input, and drives the main loop. Implements the **History Viewer** within the `App` class, featuring hierarchical grouping of events by unique item ID and an optional "Raw" log view toggle. |
 
 ## Data Flow
 ```mermaid
@@ -58,4 +58,4 @@ graph TD
 2.  `main.py` initializes `curses`, sets up color pairs, and starts the `App`.
 3.  The `App` enters a non-blocking while-loop (~20 FPS).
 4.  User inputs (like `New Timer`) pause the main loop to show a modal input overlay using `get_user_input`.
-5.  State persists in `~/.timer_cli/timer_cli.log`.
+5.  State persists in a centralized log file located in the user's home directory (e.g., `~/.timer_cli/timer_cli.log` on Unix or `%USERPROFILE%\.timer_cli\timer_cli.log` on Windows). The History Viewer dynamically parses this file to reconstruct item lifecycles.
